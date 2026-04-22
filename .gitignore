@@ -12,3 +12,9 @@ frontend/_tmp.pdf
 __pycache__/
 *.pyc
 *.pyo
+
+# Temp files
+_tmp*
+
+# JSON report store
+frontend/report_store.json

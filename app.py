@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from groq import Groq
+from openai import OpenAI
 from prompts import explain_report_prompt
 from utils.extractor import extract_text_from_pdf, extract_text_from_image
 from utils.ai_extractor import ai_extract_parameters
@@ -11,14 +11,14 @@ import json
 load_dotenv(dotenv_path=".env")
 
 # STEP 2: Get API key
-api_key = os.getenv("GROQ_API_KEY")
+api_key = os.getenv("OPENROUTER_API_KEY")
 
 # STEP 3: Safety check
 if not api_key:
     raise ValueError("❌ API key not found. Check your .env file")
 
 # STEP 4: Create client
-client = Groq(api_key=api_key)
+client = OpenAI(api_key=api_key, base_url="https://openrouter.ai/api/v1")
 
 # ✅ STEP 5: RESPONSE FUNCTION
 def get_response(prompt):
