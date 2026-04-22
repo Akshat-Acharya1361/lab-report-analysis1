@@ -236,6 +236,16 @@ def parse_sections(text):
             diet.append(l.lstrip("- ").strip())
     return prec, diet
 
+def _fmt(text: str) -> str:
+    """Collapse 3+ consecutive blank lines to 1, strip leading/trailing whitespace."""
+    import re
+    text = text.strip()
+    # collapse multiple blank lines
+    text = re.sub(r'\n{3,}', '\n\n', text)
+    # collapse multiple spaces (but not newlines)
+    text = re.sub(r'[ \t]{2,}', ' ', text)
+    return text
+
 def chat_with_ai(user_q, history_key, system_extra=""):
     sys_p = st.session_state.system_prompt + "\n" + system_extra
     msgs  = [{"role":"system","content":sys_p}]
@@ -246,7 +256,7 @@ def chat_with_ai(user_q, history_key, system_extra=""):
     try:
         r = client.chat.completions.create(
             model="openai/gpt-oss-120b", messages=msgs, temperature=0.3)
-        reply = r.choices[0].message.content
+        reply = _fmt(r.choices[0].message.content)
         st.session_state[history_key].append({"role":"user","content":user_q})
         st.session_state[history_key].append({"role":"assistant","content":reply})
         st.session_state[history_key] = trim_history(st.session_state[history_key], MAX_HISTORY)
@@ -262,7 +272,7 @@ def render_inline_chat(panel_key, input_key, placeholder, system_extra=""):
                         unsafe_allow_html=True)
         else:
             st.markdown(f'<div class="chat-label cl-ai">MediScan AI</div>'
-                        f'<div class="cbubble-ai">{msg["content"]}</div>',
+                        f'<div class="cbubble-ai">{_fmt(msg["content"])}</div>',
                         unsafe_allow_html=True)
     with st.form(key=f"form_{panel_key}", clear_on_submit=True):
         ci, cb = st.columns([5,1])
@@ -538,6 +548,7 @@ section[data-testid="stSidebar"] .stButton:last-of-type>button:hover{{
   background:{_T['bubble_ai']};border:1px solid {_T['border']};
   border-radius:14px 14px 14px 4px;padding:9px 13px;margin:6px 0;margin-right:8%;
   font-size:13px;line-height:1.6;color:{_T['text']};box-shadow:0 2px 8px rgba(0,0,0,.1);
+  white-space:pre-wrap;
 }}
 .chat-label{{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:2px;}}
 .cl-user{{color:#3b82f6;text-align:right;}}.cl-ai{{color:#14b8a6;}}
@@ -1238,9 +1249,9 @@ with st.expander("📂  Open Upload Panel", expanded=not st.session_state.analyz
             placeholder="e.g.  Hemoglobin: 10.5 g/dL\nBlood Sugar (Fasting): 130 mg/dL\n...",
         )
     elif method == "🖼️ Image":
-        img_file = st.file_uploader("Upload image", type=["png","jpg","jpeg"])
+        img_file = st.file_uploader("Upload images", type=["png","jpg","jpeg"], accept_multiple_files=True)
     else:
-        pdf_file = st.file_uploader("Upload PDF", type=["pdf"])
+        pdf_file = st.file_uploader("Upload PDFs", type=["pdf"], accept_multiple_files=True)
 
     # full-width Analyse button + optional Reset below
     st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
@@ -1264,11 +1275,15 @@ if analyze_btn:
         if method == "📝 Paste Text":
             raw = report_text_input or ""
         elif method == "🖼️ Image" and img_file:
-            with open("frontend/_tmp_img","wb") as f: f.write(img_file.read())
-            raw = extract_text_from_image("frontend/_tmp_img")
+            for i, f in enumerate(img_file):
+                tmp_img = os.path.join(os.path.dirname(__file__), f"_tmp_img_{i}")
+                with open(tmp_img, "wb") as fp: fp.write(f.read())
+                raw += f"\n--- File: {f.name} ---\n" + extract_text_from_image(tmp_img)
         elif method == "📄 PDF" and pdf_file:
-            with open("frontend/_tmp.pdf","wb") as f: f.write(pdf_file.read())
-            raw = extract_text_from_pdf("frontend/_tmp.pdf")
+            for i, f in enumerate(pdf_file):
+                tmp_pdf = os.path.join(os.path.dirname(__file__), f"_tmp_{i}.pdf")
+                with open(tmp_pdf, "wb") as fp: fp.write(f.read())
+                raw += f"\n--- File: {f.name} ---\n" + extract_text_from_pdf(tmp_pdf)
 
         # ── STRICT GUARDRAIL — validate before any AI call ────────────────────
         valid, msg = validate_medical_input(raw)
@@ -1591,7 +1606,7 @@ with tab_chat:
                     f'<div style="font-size:10px;font-weight:700;color:#14b8a6;'
                     f'text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px;">'
                     f'MediScan AI</div>'
-                    f'<div class="big-bubble-ai">{msg["content"]}</div>',
+                    f'<div class="big-bubble-ai" style="white-space:pre-wrap;">{_fmt(msg["content"])}</div>',
                     unsafe_allow_html=True)
 
     st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
