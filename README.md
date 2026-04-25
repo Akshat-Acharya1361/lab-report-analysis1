@@ -50,20 +50,42 @@ MediScan AI is an intelligent healthcare application that analyzes lab reports f
 
 ## 📂 Project Structure
 
-```
-lab-report-analysis-tool/
-├── frontend/
-│   └── streamlit_app.py
-├── utils/
-│   ├── extractor.py
-│   ├── ai_extractor.py
-│   └── parser.py
-├── chatbot/
-│   └── memory.py
-├── prompts.py
-├── .env              ← you create this (see setup below)
+lab-report-analysis/
+│
+├── .env                        ← API keys (gitignored)
+├── .env.example                ← template for new devs
+├── .gitignore
 ├── requirements.txt
-└── README.md
+├── README.md
+├── prompts.py                  ← LLM prompt templates
+│
+├── chatbot/
+│   └── memory.py               ← chat history trim + summarize
+│
+├── utils/
+│   ├── ai_extractor.py         ← LLM-based parameter extraction
+│   ├── extractor.py            ← PDF + image text extraction
+│   └── parser.py               ← parameter analysis + reference ranges
+│
+└── frontend/
+    ├── streamlit_app.py        ← entry point + router
+    ├── db.py                   ← SQLite (users + reports)
+    ├── auth_ui.py              ← login / signup UI
+    ├── mediscan.db             ← SQLite database (gitignored)
+    │
+    ├── components/
+    │   ├── helpers.py          ← AI helpers, chat, markdown formatter
+    │   └── styles.py           ← theme tokens + CSS injection
+    │
+    └── page_modules/
+        ├── landing.py          ← hero + features
+        ├── dashboard.py        ← upload, analyse, results, chat
+        ├── history.py          ← report history list
+        ├── analytics.py        ← stats overview
+        ├── reports.py          ← saved report viewer
+        └── settings.py         ← account info
+```
+
 ```
 
 ---
